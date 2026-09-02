@@ -1,45 +1,53 @@
 package com.kingbrezz.auctionhouse;
 
-import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
-
-import java.util.Objects;
 
 public final class AuctionHousePlugin extends JavaPlugin {
 
     private AuctionManager auctionManager;
+    private EconomyHook economyHook;
+    private AHListener auctionListener;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
-        saveResource("messages.yml", false);
 
-        auctionManager = new AuctionManager(this);
-        auctionManager.load();
-
-        AHCommand command = new AHCommand(this);
-
-        PluginCommand ah = Objects.requireNonNull(
-                getCommand("ah"),
-                "Command 'ah' is missing from plugin.yml"
+        saveResourceIfMissing(
+                "messages.yml"
         );
 
-        ah.setExecutor(command);
-        ah.setTabCompleter(command);
+        auctionManager =
+                new AuctionManager(this);
 
-        getServer().getPluginManager().registerEvents(
-                new AHListener(this),
-                this
-        );
+        economyHook =
+                new EconomyHook(this);
+
+        auctionListener =
+                new AHListener(this);
+
+        getServer()
+                .getPluginManager()
+                .registerEvents(
+                        auctionListener,
+                        this
+                );
+
+        AHCommand command =
+                new AHCommand(this);
+
+        if (getCommand("ah") != null) {
+            getCommand("ah")
+                    .setExecutor(command);
+        }
 
         auctionManager.startExpiryTask();
 
-        getLogger().info("========================================");
-        getLogger().info("AuctionHouse enabled");
-        getLogger().info("Author: KingBrezz");
-        getLogger().info("Paper: 26.2");
-        getLogger().info("Java: 25");
-        getLogger().info("========================================");
+        getLogger().info(
+                "AuctionHouse enabled."
+        );
+        getLogger().info(
+                "Author: KingBrezz"
+        );
     }
 
     @Override
@@ -49,15 +57,35 @@ public final class AuctionHousePlugin extends JavaPlugin {
         }
     }
 
+    public void reloadPluginConfig() {
+        reloadConfig();
+
+        if (auctionManager != null) {
+            auctionManager.load();
+            auctionManager.startExpiryTask();
+        }
+    }
+
     public AuctionManager getAuctionManager() {
         return auctionManager;
     }
 
-    public void reloadPlugin() {
-        reloadConfig();
+    public EconomyHook getEconomyHook() {
+        return economyHook;
+    }
 
-        if (auctionManager != null) {
-            auctionManager.reload();
+    public AHListener getAuctionListener() {
+        return auctionListener;
+    }
+
+    private void saveResourceIfMissing(
+            String resource
+    ) {
+        if (!new java.io.File(
+                getDataFolder(),
+                resource
+        ).exists()) {
+            saveResource(resource, false);
         }
     }
-                         }
+}
