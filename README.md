@@ -1,47 +1,52 @@
 # AuctionHouse
 
-Standalone Auction House extracted/reimplemented from the Auction House behavior/configuration present in the supplied UltimateDonutSmp 1.5 JAR.
+Modern, lightweight Auction House for Paper 26.2 and Java 25.
 
-- Author: KingBrezz
-- Server: Paper 26.2
-- Java: 25
-- Commands: `/ah`, `/ah reload`
-- Selling is done from the `/ah` GUI: click **Sell Held Item**, then type the price in chat.
-- The entire stack in the main hand is listed.
-- Configurable maximum price; default is **100,000,000 (100m)**.
-- Configurable active-listing limits with permission nodes.
-- Vault is optional at compile time and detected at runtime. Install Vault + an economy provider for buying/selling money.
+## Features
 
-## Permissions
+- `/ah` browse GUI
+- `/ah sell`
+- `/ah my`
+- `/ah claims`
+- `/ah search <text>`
+- `/ah reload`
+- 54-slot browse layout with 29 configurable listing slots
+- Pagination
+- Sorting: newest, oldest, lowest price, highest price, expiring soon
+- Search by item material or seller
+- Item amount, seller, total price, time remaining and listing ID in lore
+- Compact price input/display: `k`, `m`, `b`, `t`
+- Configurable minimum/maximum listing price
+- Configurable active-listing permissions
+- Configurable listing fee
+- Configurable sale tax
+- Expiration handling
+- Claim storage for expired items
+- Blocked materials and blocked lore text
+- Vault economy integration
+- Folia-supported scheduling
+- YAML persistence without an external database
 
-- `auctionhouse.use` - open AH
-- `auctionhouse.sell` - list items
-- `auctionhouse.buy` - buy listings
-- `auctionhouse.admin` - `/ah reload`
-- `auctionhouse.limit.10`
-- `auctionhouse.limit.25`
-- `auctionhouse.limit.50`
-- `auctionhouse.limit.100`
-- `auctionhouse.limit.250`
+## Compatibility
 
-The highest matching limit permission wins. Default limit is 5.
+Target:
+- Paper 26.2
+- Java 25
 
-## Max price
+Java-only. Bedrock support is not included.
 
-Edit `config.yml`:
+## Economy
 
-```yaml
-PRICING:
-  MIN_PRICE: 100
-  MAX_PRICE: 100000000
-```
-
-A listing above 100m is rejected.
+Vault is a soft dependency. A Vault-compatible economy provider is required for buying and selling with money.
 
 ## Build
 
 ```bash
-mvn clean package
+mvn -B -U clean verify
 ```
 
-Output: `target/AuctionHouse-1.0.0.jar`
+The GitHub Actions workflow builds with Java 25 and uploads the resulting JAR as an artifact.
+
+## Project
+
+Author: KingBrezz
