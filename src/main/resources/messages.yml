@@ -1,0 +1,83 @@
+prefix: "&6&lAuctionHouse &8» "
+
+general:
+  no-permission: "&cYou do not have permission."
+  players-only: "&cOnly players can use this command."
+  disabled: "&cAuction House is currently disabled."
+
+command:
+  usage: "&eUsage: /ah &7or &e/ah reload"
+  reloaded: "&aAuction House configuration reloaded."
+
+sell:
+  no-item: "&cHold an item in your main hand first."
+  invalid-price: "&cInvalid price."
+  minimum-price: "&cMinimum price: &e{price}"
+  maximum-price: "&cMaximum price: &e{price}"
+  maximum-listings: "&cYou have reached your maximum of &e{limit} &cactive listings."
+  blocked-item: "&cThis item cannot be listed."
+  listing-fee: "&7Listing fee: &e{fee}"
+  created: "&aAuction created: &f{item} x{amount} &afor &e{price}"
+  cancelled: "&eSelling cancelled."
+  prompt: "&eEnter the total selling price in chat."
+  examples: "&7Examples: &f1k &7/ &f1m &7/ &f1b &7/ &f1t"
+  cancel: "&7Type &ccancel &7to cancel."
+
+buy:
+  success: "&aYou bought &f{item} x{amount} &afor &e{price}&a."
+  not-enough-money: "&cYou don't have enough money."
+  inventory-full: "&cYour inventory is full."
+  own-listing: "&cYou cannot purchase your own listing."
+  unavailable: "&cThis auction is no longer available."
+  processing: "&eProcessing purchase..."
+
+listing:
+  created: "&aYour item is now listed."
+  cancelled: "&eYour listing has been cancelled."
+  expired: "&eYour listing expired and the item was moved to Claims."
+  sold: "&aYour item has been sold for &e{price}&a."
+  seller-offline: "&7Your money is waiting in Claims."
+
+claims:
+  empty: "&7You have no claims."
+  item-collected: "&aItem collected."
+  money-collected: "&aMoney collected: &e{amount}"
+  inventory-full: "&cYour inventory is full. Claim remains available."
+  collected: "&aClaim collected successfully."
+
+gui:
+  browse:
+    title: "&8Auction House"
+    previous-page: "&ePrevious Page"
+    next-page: "&eNext Page"
+    page: "&7Page &f{page}&7/&f{pages}"
+    refresh: "&aRefresh"
+    my-auctions: "&eMy Auctions"
+    claims: "&6Claims"
+    sell: "&aSell Item"
+    close: "&cClose"
+    empty: "&7There are no auctions available."
+
+  item:
+    seller: "&7Seller: &f{seller}"
+    amount: "&7Amount: &f{amount}"
+    price: "&7Price: &e{price}"
+    time-left: "&7Time Left: &f{time}"
+    click-to-buy: "&aClick to purchase"
+    expired: "&cExpired"
+    own: "&cYour listing"
+
+  my-listings:
+    title: "&8My Auctions"
+    cancel: "&cClick to cancel"
+    no-listings: "&7You have no active listings."
+
+  claims:
+    title: "&8Auction Claims"
+    collect: "&aClick to collect"
+    no-claims: "&7You have no claims."
+
+errors:
+  database: "&cAuction House database error."
+  reload: "&cCould not reload Auction House."
+  internal: "&cAn internal error occurred."
