@@ -11,69 +11,81 @@ public final class EconomyHook {
 
     public EconomyHook(AuctionHousePlugin plugin) {
         this.plugin = plugin;
-        setup();
+        hook();
     }
 
-    private void setup() {
-        if (plugin.getServer().getPluginManager().getPlugin("Vault") == null) {
-            plugin.getLogger().warning("Vault not found. Economy features are unavailable.");
+    public void reload() {
+        economy = null;
+        hook();
+    }
+
+    private void hook() {
+        if (plugin.getServer()
+                .getPluginManager()
+                .getPlugin("Vault") == null) {
+            plugin.getLogger().warning(
+                    "Vault not found. Economy features are unavailable."
+            );
             return;
         }
 
         RegisteredServiceProvider<Economy> provider =
                 plugin.getServer()
                         .getServicesManager()
-                        .getRegistration(Economy.class);
+                        .getRegistration(
+                                Economy.class
+                        );
 
-        if (provider != null) {
-            economy = provider.getProvider();
-            plugin.getLogger().info("Economy hooked: " + economy.getName());
-        } else {
-            plugin.getLogger().warning("No Vault economy provider found.");
+        if (provider == null
+                || provider.getProvider() == null) {
+            plugin.getLogger().warning(
+                    "No Vault economy provider found."
+            );
+            return;
         }
+
+        economy = provider.getProvider();
+
+        plugin.getLogger().info(
+                "Economy hooked: "
+                        + economy.getName()
+        );
     }
 
     public boolean isAvailable() {
         return economy != null;
     }
 
-    public double balance(OfflinePlayer player) {
-        if (!isAvailable()) {
-            return 0D;
-        }
-
-        return economy.getBalance(player);
+    public boolean has(
+            OfflinePlayer player,
+            double amount
+    ) {
+        return isAvailable()
+                && amount >= 0D
+                && economy.has(player, amount);
     }
 
-    public boolean has(OfflinePlayer player, double amount) {
-        if (!isAvailable()) {
-            return false;
-        }
-
-        return economy.has(player, amount);
+    public boolean withdraw(
+            OfflinePlayer player,
+            double amount
+    ) {
+        return isAvailable()
+                && amount >= 0D
+                && economy.withdrawPlayer(
+                        player,
+                        amount
+                ).transactionSuccess();
     }
 
-    public boolean withdraw(OfflinePlayer player, double amount) {
-        if (!isAvailable() || amount < 0D) {
-            return false;
-        }
-
-        return economy.withdrawPlayer(player, amount).transactionSuccess();
-    }
-
-    public boolean deposit(OfflinePlayer player, double amount) {
-        if (!isAvailable() || amount < 0D) {
-            return false;
-        }
-
-        return economy.depositPlayer(player, amount).transactionSuccess();
-    }
-
-    public String format(double amount) {
-        if (!isAvailable()) {
-            return PriceFormatter.format(amount);
-        }
-
-        return economy.format(amount);
+    public boolean deposit(
+            OfflinePlayer player,
+            double amount
+    ) {
+        return isAvailable()
+                && amount >= 0D
+                && economy.depositPlayer(
+                        player,
+                        amount
+                ).transactionSuccess();
     }
 }

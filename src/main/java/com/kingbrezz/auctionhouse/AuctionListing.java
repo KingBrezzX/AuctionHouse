@@ -6,18 +6,16 @@ import java.util.UUID;
 
 public final class AuctionListing {
 
-    private final long id;
+    private final String id;
     private final UUID seller;
     private final String sellerName;
-
     private final ItemStack item;
     private final double price;
-
     private final long createdAt;
     private final long expiresAt;
 
     public AuctionListing(
-            long id,
+            String id,
             UUID seller,
             String sellerName,
             ItemStack item,
@@ -34,7 +32,7 @@ public final class AuctionListing {
         this.expiresAt = expiresAt;
     }
 
-    public long getId() {
+    public String getId() {
         return id;
     }
 
@@ -48,10 +46,6 @@ public final class AuctionListing {
 
     public ItemStack getItem() {
         return item.clone();
-    }
-
-    public int getAmount() {
-        return item.getAmount();
     }
 
     public double getPrice() {
@@ -71,18 +65,11 @@ public final class AuctionListing {
     }
 
     public long getRemainingMillis() {
-        return Math.max(
-                0L,
-                expiresAt - System.currentTimeMillis()
-        );
+        return Math.max(0L, expiresAt - System.currentTimeMillis());
     }
 
-    public String getFormattedPrice() {
-        return PriceFormatter.format(price);
-    }
-
-    public String getFormattedRemainingTime() {
-        long seconds = getRemainingMillis() / 1000L;
+    public String getRemainingFormatted() {
+        long seconds = getRemainingMillis() / 1_000L;
 
         long days = seconds / 86_400L;
         seconds %= 86_400L;
@@ -107,16 +94,4 @@ public final class AuctionListing {
 
         return seconds + "s";
     }
-
-    public AuctionListing copy() {
-        return new AuctionListing(
-                id,
-                seller,
-                sellerName,
-                item,
-                price,
-                createdAt,
-                expiresAt
-        );
-    }
-  }
+}

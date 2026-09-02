@@ -23,19 +23,26 @@ public final class ClaimManager {
         load();
     }
 
-    public void load() {
+    public synchronized void load() {
         file = new File(
                 plugin.getDataFolder(),
                 "claims.yml"
         );
 
-        if (!plugin.getDataFolder().exists()) {
-            plugin.getDataFolder().mkdirs();
+        if (!plugin.getDataFolder().exists()
+                && !plugin.getDataFolder().mkdirs()) {
+            plugin.getLogger().warning(
+                    "Could not create plugin data folder."
+            );
         }
 
         if (!file.exists()) {
             try {
-                file.createNewFile();
+                if (!file.createNewFile()) {
+                    plugin.getLogger().warning(
+                            "Could not create claims.yml."
+                    );
+                }
             } catch (IOException exception) {
                 plugin.getLogger().severe(
                         "Could not create claims.yml: "
@@ -44,13 +51,12 @@ public final class ClaimManager {
             }
         }
 
-        data =
-                YamlConfiguration.loadConfiguration(file);
+        data = YamlConfiguration.loadConfiguration(file);
     }
 
-    public void save() {
-        if (data == null) {
-            data = new YamlConfiguration();
+    public synchronized void save() {
+        if (data == null || file == null) {
+            return;
         }
 
         try {
@@ -63,14 +69,15 @@ public final class ClaimManager {
         }
     }
 
-    public void addItem(
+    public synchronized void addItem(
             UUID player,
             ItemStack item,
             String reason
     ) {
         if (player == null
                 || item == null
-                || item.getType().isAir()) {
+                || item.getType().isAir()
+                || item.getAmount() <= 0) {
             return;
         }
 
@@ -85,43 +92,35 @@ public final class ClaimManager {
                         + "."
                         + id;
 
-        data.set(
-                path + ".item",
-                item.clone()
-        );
-
-        data.set(
-                path + ".reason",
-                reason
-        );
-
-        data.set(
-                path + ".created",
-                System.currentTimeMillis()
-        );
+        data.set(path + ".item", item.clone());
+        data.set(path + ".reason",
+                reason == null ? "Auction" : reason);
+        data.set(path + ".created",
+                System.currentTimeMillis());
 
         save();
     }
 
-    public List<ClaimEntry> getClaims(
+    public synchronized List<ClaimEntry> getClaims(
             UUID player
     ) {
         List<ClaimEntry> result =
                 new ArrayList<>();
 
+        if (player == null || data == null) {
+            return result;
+        }
+
         ConfigurationSection section =
                 data.getConfigurationSection(
-                        "claims."
-                                + player
+                        "claims." + player
                 );
 
         if (section == null) {
             return result;
         }
 
-        for (String id :
-                section.getKeys(false)) {
-
+        for (String id : section.getKeys(false)) {
             ConfigurationSection node =
                     section.getConfigurationSection(id);
 
@@ -133,28 +132,23 @@ public final class ClaimManager {
                     node.getItemStack("item");
 
             if (item == null
-                    || item.getType().isAir()) {
+                    || item.getType().isAir()
+                    || item.getAmount() <= 0) {
                 continue;
             }
-
-            String reason =
-                    node.getString(
-                            "reason",
-                            "Auction"
-                    );
-
-            long created =
-                    node.getLong(
-                            "created",
-                            System.currentTimeMillis()
-                    );
 
             result.add(
                     new ClaimEntry(
                             id,
                             item,
-                            reason,
-                            created
+                            node.getString(
+                                    "reason",
+                                    "Auction"
+                            ),
+                            node.getLong(
+                                    "created",
+                                    System.currentTimeMillis()
+                            )
                     )
             );
         }
@@ -162,7 +156,7 @@ public final class ClaimManager {
         return result;
     }
 
-    public boolean claim(
+    public synchronized boolean claim(
             Player player,
             String id
     ) {
@@ -182,7 +176,8 @@ public final class ClaimManager {
                 );
 
         if (item == null
-                || item.getType().isAir()) {
+                || item.getType().isAir()
+                || item.getAmount() <= 0) {
             return false;
         }
 
@@ -190,18 +185,20 @@ public final class ClaimManager {
             return false;
         }
 
-        player.getInventory().addItem(
-                item.clone()
-        );
+        MapGiveResult result =
+                giveItem(player, item);
+
+        if (!result.success()) {
+            return false;
+        }
 
         data.set(path, null);
-
         save();
 
         return true;
     }
 
-    public int count(UUID player) {
+    public synchronized int count(UUID player) {
         return getClaims(player).size();
     }
 
@@ -209,23 +206,20 @@ public final class ClaimManager {
             Player player,
             ItemStack item
     ) {
-        int remaining =
-                item.getAmount();
+        int remaining = item.getAmount();
 
         for (ItemStack current :
                 player.getInventory().getStorageContents()) {
 
             if (current == null
                     || current.getType().isAir()) {
-                remaining -=
-                        item.getMaxStackSize();
+                remaining -= item.getMaxStackSize();
             } else if (current.isSimilar(item)) {
-                remaining -=
-                        Math.max(
-                                0,
-                                current.getMaxStackSize()
-                                        - current.getAmount()
-                        );
+                remaining -= Math.max(
+                        0,
+                        current.getMaxStackSize()
+                                - current.getAmount()
+                );
             }
 
             if (remaining <= 0) {
@@ -236,6 +230,22 @@ public final class ClaimManager {
         return false;
     }
 
+    private MapGiveResult giveItem(
+            Player player,
+            ItemStack item
+    ) {
+        var leftovers =
+                player.getInventory().addItem(
+                        item.clone()
+                );
+
+        if (!leftovers.isEmpty()) {
+            return new MapGiveResult(false);
+        }
+
+        return new MapGiveResult(true);
+    }
+
     public record ClaimEntry(
             String id,
             ItemStack item,
@@ -243,4 +253,9 @@ public final class ClaimManager {
             long createdAt
     ) {
     }
-            }
+
+    private record MapGiveResult(
+            boolean success
+    ) {
+    }
+}

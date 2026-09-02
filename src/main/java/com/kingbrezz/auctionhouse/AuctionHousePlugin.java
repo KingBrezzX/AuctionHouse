@@ -4,17 +4,22 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public final class AuctionHousePlugin extends JavaPlugin {
 
+    private ClaimManager claimManager;
     private AuctionManager auctionManager;
     private EconomyHook economyHook;
+    private MessageService messages;
     private AHListener auctionListener;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        saveResourceIfMissing("messages.yml");
 
-        saveResourceIfMissing(
-                "messages.yml"
-        );
+        messages =
+                new MessageService(this);
+
+        claimManager =
+                new ClaimManager(this);
 
         auctionManager =
                 new AuctionManager(this);
@@ -38,6 +43,9 @@ public final class AuctionHousePlugin extends JavaPlugin {
         if (getCommand("ah") != null) {
             getCommand("ah")
                     .setExecutor(command);
+
+            getCommand("ah")
+                    .setTabCompleter(command);
         }
 
         auctionManager.startExpiryTask();
@@ -48,6 +56,9 @@ public final class AuctionHousePlugin extends JavaPlugin {
         getLogger().info(
                 "Author: KingBrezz"
         );
+        getLogger().info(
+                "Target: Paper 26.2 / Java 25"
+        );
     }
 
     @Override
@@ -55,15 +66,46 @@ public final class AuctionHousePlugin extends JavaPlugin {
         if (auctionManager != null) {
             auctionManager.shutdown();
         }
+
+        if (claimManager != null) {
+            claimManager.save();
+        }
     }
 
-    public void reloadPluginConfig() {
+    public void reloadPlugin() {
         reloadConfig();
 
+        if (messages != null) {
+            messages.reload();
+        }
+
+        if (claimManager != null) {
+            claimManager.load();
+        }
+
         if (auctionManager != null) {
+            auctionManager.stopExpiryTask();
             auctionManager.load();
+        }
+
+        if (economyHook != null) {
+            economyHook.reload();
+        }
+
+        if (auctionManager != null) {
             auctionManager.startExpiryTask();
         }
+    }
+
+    public boolean isAuctionHouseEnabled() {
+        return getConfig().getBoolean(
+                "settings.enabled",
+                true
+        );
+    }
+
+    public ClaimManager getClaimManager() {
+        return claimManager;
     }
 
     public AuctionManager getAuctionManager() {
@@ -74,6 +116,10 @@ public final class AuctionHousePlugin extends JavaPlugin {
         return economyHook;
     }
 
+    public MessageService getMessages() {
+        return messages;
+    }
+
     public AHListener getAuctionListener() {
         return auctionListener;
     }
@@ -81,11 +127,17 @@ public final class AuctionHousePlugin extends JavaPlugin {
     private void saveResourceIfMissing(
             String resource
     ) {
-        if (!new java.io.File(
-                getDataFolder(),
-                resource
-        ).exists()) {
-            saveResource(resource, false);
+        java.io.File file =
+                new java.io.File(
+                        getDataFolder(),
+                        resource
+                );
+
+        if (!file.exists()) {
+            saveResource(
+                    resource,
+                    false
+            );
         }
     }
 }
