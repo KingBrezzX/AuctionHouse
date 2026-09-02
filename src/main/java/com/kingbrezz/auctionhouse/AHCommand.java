@@ -1,12 +1,12 @@
 package com.kingbrezz.auctionhouse;
 
 import org.bukkit.ChatColor;
-import org.bukkit.command.*;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import java.util.List;
-
-public final class AHCommand implements CommandExecutor, TabCompleter {
+public final class AHCommand implements CommandExecutor {
 
     private final AuctionHousePlugin plugin;
 
@@ -21,91 +21,40 @@ public final class AHCommand implements CommandExecutor, TabCompleter {
             String label,
             String[] args
     ) {
-        if (args.length == 0) {
-            if (!(sender instanceof Player player)) {
-                sender.sendMessage(
-                        color("&cOnly players can open the Auction House.")
-                );
-                return true;
-            }
-
-            if (!player.hasPermission("auctionhouse.use")) {
-                player.sendMessage(
-                        message("no-permission")
-                );
-                return true;
-            }
-
-            new AHGui(plugin).openBrowse(player, 0);
-            return true;
-        }
-
-        if (args.length == 1 &&
-                args[0].equalsIgnoreCase("reload")) {
+        if (args.length > 0
+                && args[0].equalsIgnoreCase("reload")) {
 
             if (!sender.hasPermission("auctionhouse.admin")) {
-                sender.sendMessage(
-                        message("no-permission")
-                );
+                sender.sendMessage(color("&cYou do not have permission."));
                 return true;
             }
 
-            try {
-                plugin.reloadPlugin();
+            plugin.reloadPluginConfig();
 
-                sender.sendMessage(
-                        message("reloaded")
-                );
-            } catch (Exception exception) {
-                sender.sendMessage(
-                        message("reload-error")
-                );
-
-                plugin.getLogger().warning(
-                        "Reload failed: "
-                                + exception.getMessage()
-                );
-            }
+            sender.sendMessage(color(
+                    "&aAuctionHouse configuration reloaded."
+            ));
 
             return true;
         }
 
-        sender.sendMessage(
-                color("&eUsage: &f/ah &7or &f/ah reload")
-        );
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("This command can only be used by players.");
+            return true;
+        }
 
+        if (!player.hasPermission("auctionhouse.use")) {
+            player.sendMessage(color(
+                    "&cYou do not have permission to use Auction House."
+            ));
+            return true;
+        }
+
+        new AHGui(plugin).openBrowse(player, 0);
         return true;
     }
 
-    @Override
-    public List<String> onTabComplete(
-            CommandSender sender,
-            Command command,
-            String alias,
-            String[] args
-    ) {
-        if (args.length == 1 &&
-                sender.hasPermission("auctionhouse.admin")) {
-
-            return List.of("reload");
-        }
-
-        return List.of();
+    private String color(String text) {
+        return ChatColor.translateAlternateColorCodes('&', text);
     }
-
-    private String message(String path) {
-        String value = plugin.getConfig().getString(
-                "messages." + path,
-                "&cMessage not configured."
-        );
-
-        return color(value);
-    }
-
-    private String color(String message) {
-        return ChatColor.translateAlternateColorCodes(
-                '&',
-                message
-        );
-    }
-  }
+}
