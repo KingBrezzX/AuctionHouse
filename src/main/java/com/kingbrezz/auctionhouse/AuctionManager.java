@@ -17,7 +17,6 @@ import java.util.UUID;
 public final class AuctionManager {
 
     private final AuctionHousePlugin plugin;
-
     private final Map<String, AuctionListing> listings =
             new LinkedHashMap<>();
 
@@ -31,14 +30,17 @@ public final class AuctionManager {
     }
 
     public void load() {
-        file = new File(plugin.getDataFolder(), "listings.yml");
+        file = new File(
+                plugin.getDataFolder(),
+                "listings.yml"
+        );
+
+        if (!plugin.getDataFolder().exists()) {
+            plugin.getDataFolder().mkdirs();
+        }
 
         if (!file.exists()) {
             try {
-                if (!plugin.getDataFolder().exists()) {
-                    plugin.getDataFolder().mkdirs();
-                }
-
                 file.createNewFile();
             } catch (IOException exception) {
                 plugin.getLogger().severe(
@@ -48,17 +50,23 @@ public final class AuctionManager {
             }
         }
 
-        data = YamlConfiguration.loadConfiguration(file);
+        data =
+                YamlConfiguration.loadConfiguration(file);
+
         listings.clear();
 
         ConfigurationSection section =
-                data.getConfigurationSection("listings");
+                data.getConfigurationSection(
+                        "listings"
+                );
 
         if (section == null) {
             return;
         }
 
-        for (String id : section.getKeys(false)) {
+        for (String id :
+                section.getKeys(false)) {
+
             ConfigurationSection node =
                     section.getConfigurationSection(id);
 
@@ -67,19 +75,19 @@ public final class AuctionManager {
             }
 
             try {
-                UUID seller = UUID.fromString(
-                        node.getString("seller")
-                );
+                UUID seller =
+                        UUID.fromString(
+                                node.getString("seller")
+                        );
 
                 String sellerName =
-                        node.getString("seller-name", "Unknown");
+                        node.getString(
+                                "seller-name",
+                                "Unknown"
+                        );
 
                 ItemStack item =
                         node.getItemStack("item");
-
-                if (item == null || item.getType().isAir()) {
-                    continue;
-                }
 
                 double price =
                         node.getDouble("price");
@@ -89,6 +97,11 @@ public final class AuctionManager {
 
                 long expires =
                         node.getLong("expires");
+
+                if (item == null
+                        || item.getType().isAir()) {
+                    continue;
+                }
 
                 AuctionListing listing =
                         new AuctionListing(
@@ -101,13 +114,18 @@ public final class AuctionManager {
                                 expires
                         );
 
-                if (!listing.isExpired()) {
-                    listings.put(id, listing);
+                if (listing.isExpired()) {
+                    moveExpiredToClaims(listing);
+                } else {
+                    listings.put(
+                            id,
+                            listing
+                    );
                 }
 
             } catch (Exception exception) {
                 plugin.getLogger().warning(
-                        "Failed to load listing "
+                        "Could not load listing "
                                 + id
                                 + ": "
                                 + exception.getMessage()
@@ -125,8 +143,12 @@ public final class AuctionManager {
 
         data.set("listings", null);
 
-        for (AuctionListing listing : listings.values()) {
-            String path = "listings." + listing.getId();
+        for (AuctionListing listing :
+                listings.values()) {
+
+            String path =
+                    "listings."
+                            + listing.getId();
 
             data.set(
                     path + ".seller",
@@ -188,19 +210,26 @@ public final class AuctionManager {
             return false;
         }
 
-        long now = System.currentTimeMillis();
+        long now =
+                System.currentTimeMillis();
 
-        long hours = plugin.getConfig().getLong(
-                "settings.listing-duration-hours",
-                48
-        );
+        long hours =
+                plugin.getConfig().getLong(
+                        "settings.listing-duration-hours",
+                        48
+                );
 
-        long duration = hours * 60L * 60L * 1000L;
+        long duration =
+                hours
+                        * 60L
+                        * 60L
+                        * 1000L;
 
-        String id = UUID.randomUUID()
-                .toString()
-                .replace("-", "")
-                .substring(0, 12);
+        String id =
+                UUID.randomUUID()
+                        .toString()
+                        .replace("-", "")
+                        .substring(0, 12);
 
         AuctionListing listing =
                 new AuctionListing(
@@ -213,41 +242,58 @@ public final class AuctionManager {
                         now + duration
                 );
 
-        listings.put(id, listing);
+        listings.put(
+                id,
+                listing
+        );
+
         save();
 
         return true;
     }
 
-    public boolean removeListing(String id) {
+    public boolean removeListing(
+            String id
+    ) {
         if (id == null) {
             return false;
         }
 
-        AuctionListing removed =
+        AuctionListing listing =
                 listings.remove(id);
 
-        if (removed == null) {
+        if (listing == null) {
             return false;
         }
 
         save();
+
         return true;
     }
 
-    public AuctionListing getListing(String id) {
+    public AuctionListing getListing(
+            String id
+    ) {
         return listings.get(id);
     }
 
-    public Collection<AuctionListing> getActiveListings() {
-        return new ArrayList<>(listings.values());
+    public Collection<AuctionListing>
+    getActiveListings() {
+        return new ArrayList<>(
+                listings.values()
+        );
     }
 
-    public int getPlayerListingCount(UUID uuid) {
+    public int getPlayerListingCount(
+            UUID uuid
+    ) {
         int count = 0;
 
-        for (AuctionListing listing : listings.values()) {
-            if (listing.getSeller().equals(uuid)
+        for (AuctionListing listing :
+                listings.values()) {
+
+            if (listing.getSeller()
+                    .equals(uuid)
                     && !listing.isExpired()) {
                 count++;
             }
@@ -256,30 +302,39 @@ public final class AuctionManager {
         return count;
     }
 
-    public boolean canList(Player player) {
+    public boolean canList(
+            Player player
+    ) {
         return getPlayerListingCount(
                 player.getUniqueId()
         ) < getListingLimit(player);
     }
 
-    public int getListingLimit(Player player) {
+    public int getListingLimit(
+            Player player
+    ) {
         ConfigurationSection limits =
                 plugin.getConfig()
                         .getConfigurationSection(
                                 "settings.listing-limits"
                         );
 
-        int result = plugin.getConfig().getInt(
-                "settings.default-listing-limit",
-                5
-        );
+        int result =
+                plugin.getConfig().getInt(
+                        "settings.default-listing-limit",
+                        5
+                );
 
         if (limits == null) {
             return result;
         }
 
-        for (String permission : limits.getKeys(false)) {
-            if (player.hasPermission(permission)) {
+        for (String permission :
+                limits.getKeys(false)) {
+
+            if (player.hasPermission(
+                    permission
+            )) {
                 result = Math.max(
                         result,
                         limits.getInt(permission)
@@ -290,7 +345,9 @@ public final class AuctionManager {
         return result;
     }
 
-    public boolean isPriceAllowed(double price) {
+    public boolean isPriceAllowed(
+            double price
+    ) {
         double minimum =
                 plugin.getConfig().getDouble(
                         "pricing.minimum-price",
@@ -314,28 +371,34 @@ public final class AuctionManager {
             expiryTask.cancel();
         }
 
-        long seconds = Math.max(
-                5,
-                plugin.getConfig().getLong(
-                        "settings.expire-check-seconds",
-                        30
-                )
-        );
-
-        expiryTask = plugin.getServer()
-                .getGlobalRegionScheduler()
-                .runAtFixedRate(
-                        plugin,
-                        task -> removeExpired(),
-                        seconds * 20L,
-                        seconds * 20L
+        long seconds =
+                Math.max(
+                        5,
+                        plugin.getConfig().getLong(
+                                "settings.expire-check-seconds",
+                                30
+                        )
                 );
+
+        expiryTask =
+                plugin.getServer()
+                        .getGlobalRegionScheduler()
+                        .runAtFixedRate(
+                                plugin,
+                                task -> removeExpired(),
+                                seconds * 20L,
+                                seconds * 20L
+                        );
     }
 
     private void removeExpired() {
         boolean changed = false;
 
-        for (String id : new ArrayList<>(listings.keySet())) {
+        for (String id :
+                new ArrayList<>(
+                        listings.keySet()
+                )) {
+
             AuctionListing listing =
                     listings.get(id);
 
@@ -345,6 +408,15 @@ public final class AuctionManager {
 
             if (listing.isExpired()) {
                 listings.remove(id);
+
+                moveExpiredToClaims(
+                        listing
+                );
+
+                notifySellerExpired(
+                        listing
+                );
+
                 changed = true;
             }
         }
@@ -352,6 +424,57 @@ public final class AuctionManager {
         if (changed) {
             save();
         }
+    }
+
+    private void moveExpiredToClaims(
+            AuctionListing listing
+    ) {
+        if (!plugin.getConfig().getBoolean(
+                "auction.expired-to-claims",
+                true
+        )) {
+            return;
+        }
+
+        ClaimManager claims =
+                plugin.getClaimManager();
+
+        if (claims != null) {
+            claims.addItem(
+                    listing.getSeller(),
+                    listing.getItem(),
+                    "Expired auction"
+            );
+        }
+    }
+
+    private void notifySellerExpired(
+            AuctionListing listing
+    ) {
+        Player player =
+                plugin.getServer()
+                        .getPlayer(
+                                listing.getSeller()
+                        );
+
+        if (player == null
+                || !player.isOnline()) {
+            return;
+        }
+
+        player.sendMessage(
+                "§eYour auction for §f"
+                        + listing.getItem().getAmount()
+                        + "x "
+                        + listing.getItem()
+                        .getType()
+                        .name()
+                        + " §ehas expired."
+        );
+
+        player.sendMessage(
+                "§7The item is available in §f/ah §7claims."
+        );
     }
 
     public void shutdown() {
@@ -362,4 +485,4 @@ public final class AuctionManager {
 
         save();
     }
-                }
+                    }
