@@ -5,7 +5,11 @@ api-version: '1.21'
 folia-supported: true
 
 author: KingBrezz
-description: Modern Auction House for Paper 26.2 and Java 25.
+
+description: >
+  Modern, lightweight Auction House plugin for Paper 26.2
+  with GUI listings, configurable price limits, claims,
+  pagination, and K/M/B/T price formatting.
 
 softdepend:
   - Vault
@@ -23,37 +27,37 @@ permissions:
     default: true
 
   auctionhouse.sell:
-    description: Sell items on the Auction House
+    description: Create Auction House listings
     default: true
 
   auctionhouse.buy:
-    description: Buy items from the Auction House
+    description: Buy Auction House listings
     default: true
 
   auctionhouse.admin:
-    description: Reload and manage Auction House
+    description: Reload AuctionHouse
     default: op
 
   auctionhouse.limit.5:
-    description: Allows 5 active Auction House listings
+    description: Allows 5 active auction listings
     default: true
 
   auctionhouse.limit.10:
-    description: Allows 10 active Auction House listings
+    description: Allows 10 active auction listings
     default: false
 
   auctionhouse.limit.25:
-    description: Allows 25 active Auction House listings
+    description: Allows 25 active auction listings
     default: false
 
   auctionhouse.limit.50:
-    description: Allows 50 active Auction House listings
+    description: Allows 50 active auction listings
     default: false
 
   auctionhouse.limit.100:
-    description: Allows 100 active Auction House listings
+    description: Allows 100 active auction listings
     default: false
 
   auctionhouse.limit.250:
-    description: Allows 250 active Auction House listings
+    description: Allows 250 active auction listings
     default: false
