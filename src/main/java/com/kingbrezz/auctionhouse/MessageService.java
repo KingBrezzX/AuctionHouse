@@ -9,6 +9,7 @@ import java.util.Map;
 public final class MessageService {
 
     private final AuctionHousePlugin plugin;
+
     private File file;
     private YamlConfiguration messages;
 
@@ -23,6 +24,13 @@ public final class MessageService {
                 "messages.yml"
         );
 
+        if (!file.exists()) {
+            plugin.saveResource(
+                    "messages.yml",
+                    false
+            );
+        }
+
         messages =
                 YamlConfiguration.loadConfiguration(file);
     }
@@ -31,7 +39,27 @@ public final class MessageService {
             String path,
             String fallback
     ) {
-        return messages.getString(path, fallback);
+        String value =
+                messages.getString(
+                        path,
+                        fallback
+                );
+
+        return value == null
+                ? fallback
+                : value;
+    }
+
+    public String text(
+            String path,
+            String fallback
+    ) {
+        return color(
+                get(
+                        path,
+                        fallback
+                )
+        );
     }
 
     public String text(
@@ -39,24 +67,33 @@ public final class MessageService {
             String fallback,
             Map<String, ?> placeholders
     ) {
-        String value = get(path, fallback);
+        String value =
+                get(
+                        path,
+                        fallback
+                );
 
-        for (Map.Entry<String, ?> entry :
-                placeholders.entrySet()) {
-            value = value.replace(
-                    "{" + entry.getKey() + "}",
-                    String.valueOf(entry.getValue())
-            );
+        if (placeholders != null) {
+            for (Map.Entry<String, ?> entry :
+                    placeholders.entrySet()) {
+
+                String key =
+                        "{" + entry.getKey() + "}";
+
+                String replacement =
+                        String.valueOf(
+                                entry.getValue()
+                        );
+
+                value =
+                        value.replace(
+                                key,
+                                replacement
+                        );
+            }
         }
 
         return color(value);
-    }
-
-    public String text(
-            String path,
-            String fallback
-    ) {
-        return color(get(path, fallback));
     }
 
     public void send(
@@ -64,12 +101,45 @@ public final class MessageService {
             String path,
             String fallback
     ) {
-        player.sendMessage(text(path, fallback));
+        if (player == null) {
+            return;
+        }
+
+        player.sendMessage(
+                text(
+                        path,
+                        fallback
+                )
+        );
+    }
+
+    public void send(
+            Player player,
+            String path,
+            String fallback,
+            Map<String, ?> placeholders
+    ) {
+        if (player == null) {
+            return;
+        }
+
+        player.sendMessage(
+                text(
+                        path,
+                        fallback,
+                        placeholders
+                )
+        );
     }
 
     private String color(String value) {
-        return value == null
-                ? ""
-                : value.replace('&', '§');
+        if (value == null) {
+            return "";
+        }
+
+        return value.replace(
+                '&',
+                '§'
+        );
     }
 }
