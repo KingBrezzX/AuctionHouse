@@ -1,29 +1,29 @@
 name: AuctionHouse
 version: 1.0.0
 main: com.kingbrezz.auctionhouse.AuctionHousePlugin
-api-version: '1.21'
+api-version: '26.2'
 folia-supported: true
 
 author: KingBrezz
 
 description: >
   Modern, lightweight Auction House plugin for Paper 26.2
-  with GUI listings, configurable price limits, claims,
-  pagination, and K/M/B/T price formatting.
+  with GUI listings, sorting, searching, configurable prices,
+  claims, pagination, taxes, listing fees and compact money formatting.
 
 softdepend:
   - Vault
 
 commands:
   ah:
-    description: Open the Auction House
-    usage: /ah [reload]
+    description: Open Auction House
+    usage: /ah [sell|my|claims|search|reload]
     aliases:
       - auctionhouse
 
 permissions:
   auctionhouse.use:
-    description: Open the Auction House
+    description: Open Auction House
     default: true
 
   auctionhouse.sell:
@@ -31,11 +31,11 @@ permissions:
     default: true
 
   auctionhouse.buy:
-    description: Buy Auction House listings
+    description: Purchase Auction House listings
     default: true
 
   auctionhouse.admin:
-    description: Reload AuctionHouse
+    description: Reload Auction House
     default: op
 
   auctionhouse.limit.5:
