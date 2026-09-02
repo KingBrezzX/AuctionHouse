@@ -1,0 +1,137 @@
+# ==========================================================
+# AuctionHouse
+# Author: KingBrezz
+# Paper 26.2 / Java 25
+# ==========================================================
+
+settings:
+  enabled: true
+
+  # Auction listing duration in hours
+  listing-duration-hours: 48
+
+  # Default maximum active listings
+  default-listing-limit: 5
+
+  # Maximum active listings based on permission
+  listing-limits:
+    auctionhouse.limit.5: 5
+    auctionhouse.limit.10: 10
+    auctionhouse.limit.25: 25
+    auctionhouse.limit.50: 50
+    auctionhouse.limit.100: 100
+    auctionhouse.limit.250: 250
+
+  # Number of auction items displayed per page
+  items-per-page: 45
+
+  # Tax charged when an item is successfully sold
+  tax-percent: 5.0
+
+pricing:
+  # Minimum price for an auction
+  minimum-price: 100
+
+  # Maximum price for an auction
+  # 100,000,000 = 100m
+  maximum-price: 100000000
+
+  # Fee charged when creating a listing
+  listing-fee: 0
+
+  # Allow compact price input such as:
+  # 1k = 1,000
+  # 1m = 1,000,000
+  # 1b = 1,000,000,000
+  # 1t = 1,000,000,000,000
+  suffix-input: true
+
+restrictions:
+
+  # Materials that cannot be listed
+  blocked-materials:
+    - BEDROCK
+    - BARRIER
+    - COMMAND_BLOCK
+    - CHAIN_COMMAND_BLOCK
+    - REPEATING_COMMAND_BLOCK
+    - STRUCTURE_BLOCK
+    - STRUCTURE_VOID
+    - JIGSAW
+    - LIGHT
+
+  # Lore text that prevents an item from being listed
+  blocked-lore: []
+
+auction:
+
+  # Prevent players from purchasing their own listings
+  allow-self-purchase: false
+
+  # Move expired listings to Claims
+  expired-to-claims: true
+
+  # Keep claims available when the player's inventory is full
+  protect-claims-on-full-inventory: true
+
+gui:
+
+  browse:
+    title: "&8Auction House"
+    size: 54
+
+    # Slots used to display auction listings
+    item-slots:
+      - 10
+      - 11
+      - 12
+      - 13
+      - 14
+      - 15
+      - 16
+      - 19
+      - 20
+      - 21
+      - 22
+      - 23
+      - 24
+      - 25
+      - 28
+      - 29
+      - 30
+      - 31
+      - 32
+      - 33
+      - 34
+      - 37
+      - 38
+      - 39
+      - 40
+      - 41
+      - 42
+      - 43
+
+  my-listings:
+    title: "&8My Auctions"
+    size: 54
+
+  claims:
+    title: "&8Auction Claims"
+    size: 54
+
+  sell:
+    title: "&8Sell Item"
+    size: 27
+
+money-format:
+
+  # Display large numbers using compact suffixes
+  compact: true
+
+  # Maximum decimal places
+  decimals: 2
+
+  suffixes:
+    thousand: "k"
+    million: "m"
+    billion
