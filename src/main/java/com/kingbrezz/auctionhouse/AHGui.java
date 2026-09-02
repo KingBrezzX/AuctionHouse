@@ -5,14 +5,12 @@ import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 public final class AHGui {
@@ -26,17 +24,17 @@ public final class AHGui {
     }
 
     public void openBrowse(Player player, int page) {
-        List<AuctionListing> listings = new ArrayList<>(manager.getActiveListings());
+        List<AuctionListing> listings = new ArrayList<>(
+                manager.getActiveListings()
+        );
 
         listings.sort(
-                Comparator.comparingLong(AuctionListing::getCreatedAt)
-                        .reversed()
+                Comparator.comparingLong(
+                        AuctionListing::getCreatedAt
+                ).reversed()
         );
 
-        int perPage = Math.max(
-                1,
-                plugin.getConfig().getInt("settings.items-per-page", 45)
-        );
+        int perPage = 45;
 
         int maxPage = Math.max(
                 0,
@@ -45,215 +43,212 @@ public final class AHGui {
 
         page = Math.max(0, Math.min(page, maxPage));
 
-        Inventory inventory = Bukkit.createInventory(
+        Inventory inv = Bukkit.createInventory(
                 new GuiHolder(GuiHolder.Type.BROWSE, page),
                 54,
-                color("&8Auction House &7- Page " + (page + 1))
+                color("&8Auction House")
         );
 
-        fillBackground(inventory);
+        fillBottom(inv);
 
         int start = page * perPage;
         int end = Math.min(start + perPage, listings.size());
 
         int slot = 0;
 
-        for (int i = start; i < end && slot < 45; i++) {
-            AuctionListing listing = listings.get(i);
-
-            ItemStack display = createListingItem(listing);
-            inventory.setItem(slot, display);
-
-            slot++;
+        for (int i = start; i < end; i++) {
+            inv.setItem(
+                    slot++,
+                    createListingItem(listings.get(i))
+            );
         }
 
-        inventory.setItem(45, button(
-                Material.ARROW,
-                "&ePrevious Page",
-                "&7Click to go to the previous page."
-        ));
+        inv.setItem(
+                45,
+                button(
+                        Material.ARROW,
+                        "&ePrevious Page",
+                        "&7Page " + Math.max(1, page)
+                )
+        );
 
-        inventory.setItem(49, button(
-                Material.BOOK,
-                "&bAuction House",
-                "&7Page: &f" + (page + 1) + "&7/&f" + (maxPage + 1),
-                "&7Listings: &f" + listings.size()
-        ));
+        inv.setItem(
+                49,
+                button(
+                        Material.BOOK,
+                        "&bAuction House",
+                        "&7Page: &f" + (page + 1),
+                        "&7Listings: &f" + listings.size(),
+                        "",
+                        "&7Use &f/ah &7to reopen."
+                )
+        );
 
-        inventory.setItem(53, button(
-                Material.ARROW,
-                "&eNext Page",
-                "&7Click to go to the next page."
-        ));
+        inv.setItem(
+                53,
+                button(
+                        Material.ARROW,
+                        "&eNext Page",
+                        "&7Page " + (page + 2)
+                )
+        );
 
-        player.openInventory(inventory);
+        player.openInventory(inv);
     }
 
     public void openMyListings(Player player, int page) {
-        UUID uuid = player.getUniqueId();
+        List<AuctionListing> listings =
+                manager.getActiveListings()
+                        .stream()
+                        .filter(
+                                listing -> listing.getSeller()
+                                        .equals(player.getUniqueId())
+                        )
+                        .sorted(
+                                Comparator.comparingLong(
+                                        AuctionListing::getCreatedAt
+                                ).reversed()
+                        )
+                        .toList();
 
-        List<AuctionListing> listings = manager.getActiveListings()
-                .stream()
-                .filter(listing -> listing.getSeller().equals(uuid))
-                .sorted(
-                        Comparator.comparingLong(AuctionListing::getCreatedAt)
-                                .reversed()
-                )
-                .toList();
-
-        int perPage = Math.max(
-                1,
-                plugin.getConfig().getInt("settings.items-per-page", 45)
-        );
-
-        int maxPage = Math.max(
-                0,
-                (listings.size() - 1) / perPage
-        );
-
-        page = Math.max(0, Math.min(page, maxPage));
-
-        Inventory inventory = Bukkit.createInventory(
-                new GuiHolder(GuiHolder.Type.MY_LISTINGS, page),
+        Inventory inv = Bukkit.createInventory(
+                new GuiHolder(
+                        GuiHolder.Type.MY_LISTINGS,
+                        page
+                ),
                 54,
-                color("&8My Auctions &7- Page " + (page + 1))
+                color("&8My Auctions")
         );
 
-        fillBackground(inventory);
+        fillBottom(inv);
 
-        int start = page * perPage;
-        int end = Math.min(start + perPage, listings.size());
-
-        int slot = 0;
-
-        for (int i = start; i < end && slot < 45; i++) {
-            AuctionListing listing = listings.get(i);
-
-            ItemStack item = createListingItem(listing);
+        for (int i = 0; i < listings.size() && i < 45; i++) {
+            ItemStack item =
+                    createListingItem(listings.get(i));
 
             ItemMeta meta = item.getItemMeta();
 
             if (meta != null) {
-                List<String> lore = meta.hasLore()
-                        ? new ArrayList<>(meta.getLore())
-                        : new ArrayList<>();
+                List<String> lore =
+                        meta.hasLore()
+                                ? new ArrayList<>(meta.getLore())
+                                : new ArrayList<>();
 
                 lore.add("");
-                lore.add(color("&cClick to cancel this listing."));
+                lore.add(color("&cRight-click to cancel."));
 
                 meta.setLore(lore);
                 item.setItemMeta(meta);
             }
 
-            inventory.setItem(slot, item);
-            slot++;
+            inv.setItem(i, item);
         }
 
-        inventory.setItem(45, button(
-                Material.ARROW,
-                "&ePrevious Page",
-                "&7Go to the previous page."
-        ));
+        inv.setItem(
+                49,
+                button(
+                        Material.CHEST,
+                        "&bMy Auctions",
+                        "&7Active listings: &f" + listings.size(),
+                        "",
+                        "&7Your listing limit: &f"
+                                + manager.getListingLimit(player)
+                )
+        );
 
-        inventory.setItem(49, button(
-                Material.CHEST,
-                "&bMy Auctions",
-                "&7Active listings: &f" + listings.size()
-        ));
-
-        inventory.setItem(53, button(
-                Material.ARROW,
-                "&eNext Page",
-                "&7Go to the next page."
-        ));
-
-        player.openInventory(inventory);
+        player.openInventory(inv);
     }
 
     public void openSell(Player player) {
-        Inventory inventory = Bukkit.createInventory(
+        Inventory inv = Bukkit.createInventory(
                 new GuiHolder(GuiHolder.Type.SELL, 0),
                 27,
                 color("&8Sell Item")
         );
 
-        fillBackground(inventory);
+        fillFull(inv);
 
-        ItemStack hand = player.getInventory().getItemInMainHand();
+        ItemStack hand =
+                player.getInventory().getItemInMainHand();
 
-        if (hand.getType() != Material.AIR) {
-            ItemStack item = hand.clone();
+        if (hand.getType().isAir()) {
+            inv.setItem(
+                    13,
+                    button(
+                            Material.BARRIER,
+                            "&cNo Item",
+                            "&7Hold an item in your main hand."
+                    )
+            );
+        } else {
+            ItemStack display = hand.clone();
 
-            ItemMeta meta = item.getItemMeta();
+            ItemMeta meta = display.getItemMeta();
 
             if (meta != null) {
-                List<String> lore = meta.hasLore()
-                        ? new ArrayList<>(meta.getLore())
-                        : new ArrayList<>();
+                List<String> lore =
+                        meta.hasLore()
+                                ? new ArrayList<>(meta.getLore())
+                                : new ArrayList<>();
 
                 lore.add("");
-                lore.add(color("&eSelected Item"));
                 lore.add(color("&7Amount: &f" + hand.getAmount()));
                 lore.add("");
-                lore.add(color("&aClick to set price."));
+                lore.add(color("&aClick to set a price."));
 
                 meta.setLore(lore);
-                item.setItemMeta(meta);
+                display.setItemMeta(meta);
             }
 
-            inventory.setItem(13, item);
-        } else {
-            inventory.setItem(13, button(
-                    Material.BARRIER,
-                    "&cNo Item",
-                    "&7Hold an item in your main hand."
-            ));
+            inv.setItem(13, display);
         }
 
-        inventory.setItem(11, button(
-                Material.EMERALD,
-                "&aSell Item",
-                "&7Hold an item and click here.",
-                "&7You will be asked for a price."
-        ));
+        inv.setItem(
+                11,
+                button(
+                        Material.EMERALD,
+                        "&aCreate Listing",
+                        "&7Hold an item in your hand.",
+                        "&7Then click here."
+                )
+        );
 
-        inventory.setItem(15, button(
-                Material.ARROW,
-                "&cBack",
-                "&7Return to Auction House."
-        ));
+        inv.setItem(
+                15,
+                button(
+                        Material.ARROW,
+                        "&cBack",
+                        "&7Return to Auction House."
+                )
+        );
 
-        player.openInventory(inventory);
+        player.openInventory(inv);
     }
 
     public void openClaims(Player player, int page) {
-        Inventory inventory = Bukkit.createInventory(
-                new GuiHolder(GuiHolder.Type.CLAIMS, page),
+        Inventory inv = Bukkit.createInventory(
+                new GuiHolder(
+                        GuiHolder.Type.CLAIMS,
+                        page
+                ),
                 54,
                 color("&8Auction Claims")
         );
 
-        fillBackground(inventory);
+        fillBottom(inv);
 
-        inventory.setItem(49, button(
-                Material.CHEST,
-                "&bAuction Claims",
-                "&7Items waiting for collection."
-        ));
+        inv.setItem(
+                49,
+                button(
+                        Material.CHEST,
+                        "&bAuction Claims",
+                        "&7Items from completed auctions.",
+                        "",
+                        "&eClaim items here."
+                )
+        );
 
-        inventory.setItem(45, button(
-                Material.ARROW,
-                "&ePrevious Page",
-                "&7Previous page."
-        ));
-
-        inventory.setItem(53, button(
-                Material.ARROW,
-                "&eNext Page",
-                "&7Next page."
-        ));
-
-        player.openInventory(inventory);
+        player.openInventory(inv);
     }
 
     public void handleBrowseClick(
@@ -263,20 +258,33 @@ public final class AHGui {
             boolean shiftClick,
             boolean doubleClick
     ) {
-        if (slot < 0) {
-            return;
-        }
-
         if (slot == 45) {
-            openBrowse(player, Math.max(
-                    0,
-                    getCurrentPage(player) - 1
-            ));
+            GuiHolder holder = getHolder(player);
+
+            int page = holder == null
+                    ? 0
+                    : holder.getPage();
+
+            openBrowse(
+                    player,
+                    Math.max(0, page - 1)
+            );
+
             return;
         }
 
         if (slot == 53) {
-            openBrowse(player, getCurrentPage(player) + 1);
+            GuiHolder holder = getHolder(player);
+
+            int page = holder == null
+                    ? 0
+                    : holder.getPage();
+
+            openBrowse(
+                    player,
+                    page + 1
+            );
+
             return;
         }
 
@@ -284,139 +292,501 @@ public final class AHGui {
             return;
         }
 
-        AuctionListing listing = getListingForSlot(player, slot);
+        AuctionListing listing =
+                getListingForSlot(player, slot);
 
         if (listing == null) {
             return;
         }
 
         if (listing.isExpired()) {
-            player.sendMessage(color("&cThis auction has expired."));
-            openBrowse(player, getCurrentPage(player));
+            player.sendMessage(
+                    color("&cThis auction has expired.")
+            );
+            openBrowse(player, 0);
             return;
         }
 
-        if (listing.getSeller().equals(player.getUniqueId())
-                && !plugin.getConfig().getBoolean(
-                "auction.allow-self-purchase",
-                false
+        if (listing.getSeller().equals(
+                player.getUniqueId()
         )) {
-            player.sendMessage(color("&cYou cannot buy your own listing."));
+            player.sendMessage(
+                    color("&cYou cannot buy your own auction.")
+            );
             return;
         }
 
-        if (!manager.removeListing(listing.getId())) {
-            player.sendMessage(color("&cThis listing is no longer available."));
-            openBrowse(player, getCurrentPage(player));
+        double price = listing.getPrice();
+
+        EconomyHook economy =
+                plugin.getEconomyHook();
+
+        if (!economy.isAvailable()) {
+            player.sendMessage(
+                    color("&cEconomy is not available.")
+            );
             return;
         }
 
-        player.getInventory().addItem(listing.getItem().clone());
+        if (!economy.has(player, price)) {
+            player.sendMessage(
+                    color(
+                            "&cYou need &e"
+                                    + PriceFormatter.format(price)
+                                    + " &cto buy this item."
+                    )
+            );
+            return;
+        }
 
-        player.sendMessage(color(
-                "&aPurchased &f"
-                        + listing.getItem().getAmount()
-                        + "x "
-                        + prettyMaterial(listing.getItem().getType())
-                        + " &afor &e"
-                        + PriceFormatter.format(listing.getPrice())
-        ));
+        if (!economy.withdraw(player, price)) {
+            player.sendMessage(
+                    color("&cPayment failed.")
+            );
+            return;
+        }
 
-        Player seller = Bukkit.getPlayer(listing.getSeller());
+        manager.removeListing(listing.getId());
+
+        MapGiveResult result =
+                giveItem(player, listing.getItem());
+
+        if (!result.success()) {
+            economy.deposit(player, price);
+
+            player.sendMessage(
+                    color(
+                            "&cYour inventory is full. "
+                                    + "Purchase cancelled."
+                    )
+            );
+
+            return;
+        }
+
+        Player seller =
+                Bukkit.getPlayer(listing.getSeller());
+
+        double tax =
+                plugin.getConfig().getDouble(
+                        "settings.tax-percent",
+                        5.0
+                );
+
+        double sellerAmount =
+                price - (price * tax / 100.0);
 
         if (seller != null && seller.isOnline()) {
-            seller.sendMessage(color(
-                    "&aYour auction was purchased for &e"
-                            + PriceFormatter.format(listing.getPrice())
-            ));
+            economy.deposit(
+                    seller,
+                    sellerAmount
+            );
+
+            seller.sendMessage(
+                    color(
+                            "&aYour auction sold for &e"
+                                    + PriceFormatter.format(price)
+                                    + "&a."
+                    )
+            );
+        } else {
+            economy.deposit(
+                    Bukkit.getOfflinePlayer(
+                            listing.getSeller()
+                    ),
+                    sellerAmount
+            );
         }
 
-        openBrowse(player, getCurrentPage(player));
+        player.sendMessage(
+                color(
+                        "&aPurchased &f"
+                                + listing.getItem().getAmount()
+                                + "x "
+                                + pretty(
+                                listing.getItem().getType()
+                        )
+                                + " &afor &e"
+                                + PriceFormatter.format(price)
+                )
+        );
+
+        openBrowse(player, 0);
     }
 
-    private AuctionListing getListingForSlot(Player player, int slot) {
-        List<AuctionListing> listings = new ArrayList<>(
+    public void handleMyListingsClick(
+            Player player,
+            int slot
+    ) {
+        if (slot >= 45) {
+            return;
+        }
+
+        List<AuctionListing> listings =
                 manager.getActiveListings()
+                        .stream()
+                        .filter(
+                                listing -> listing.getSeller()
+                                        .equals(player.getUniqueId())
+                        )
+                        .sorted(
+                                Comparator.comparingLong(
+                                        AuctionListing::getCreatedAt
+                                ).reversed()
+                        )
+                        .toList();
+
+        if (slot >= listings.size()) {
+            return;
+        }
+
+        AuctionListing listing =
+                listings.get(slot);
+
+        if (!manager.removeListing(
+                listing.getId()
+        )) {
+            player.sendMessage(
+                    color("&cThis listing is no longer available.")
+            );
+            return;
+        }
+
+        player.getInventory().addItem(
+                listing.getItem().clone()
         );
+
+        player.sendMessage(
+                color(
+                        "&aAuction cancelled. "
+                                + "Your item has been returned."
+                )
+        );
+
+        openMyListings(player, 0);
+    }
+
+    public void handleClaimsClick(
+            Player player,
+            int slot
+    ) {
+        player.sendMessage(
+                color("&eThere are currently no claim items.")
+        );
+    }
+
+    public void handleSellClick(
+            Player player,
+            int slot
+    ) {
+        if (slot == 15) {
+            openBrowse(player, 0);
+            return;
+        }
+
+        if (slot != 11) {
+            return;
+        }
+
+        if (!player.hasPermission(
+                "auctionhouse.sell"
+        )) {
+            player.sendMessage(
+                    color("&cYou do not have permission to sell.")
+            );
+            return;
+        }
+
+        if (!manager.canList(player)) {
+            player.sendMessage(
+                    color(
+                            "&cYou reached your auction limit: &f"
+                                    + manager.getListingLimit(player)
+                    )
+            );
+            return;
+        }
+
+        ItemStack hand =
+                player.getInventory().getItemInMainHand();
+
+        if (hand.getType().isAir()) {
+            player.sendMessage(
+                    color("&cHold an item first.")
+            );
+            return;
+        }
+
+        if (isBlocked(hand)) {
+            player.sendMessage(
+                    color("&cThis item cannot be auctioned.")
+            );
+            return;
+        }
+
+        player.closeInventory();
+
+        AHListener listener =
+                plugin.getAuctionListener();
+
+        listener.beginPriceInput(player);
+    }
+
+    public void createListingFromInput(
+            Player player,
+            String input
+    ) {
+        Double price =
+                PriceFormatter.parse(input);
+
+        if (price == null) {
+            player.sendMessage(
+                    color(
+                            "&cInvalid price. Examples: "
+                                    + "&f1k, 1.5m, 10m, 1b, 1t"
+                    )
+            );
+            return;
+        }
+
+        if (!manager.isPriceAllowed(price)) {
+            double min =
+                    plugin.getConfig().getDouble(
+                            "pricing.minimum-price",
+                            100
+                    );
+
+            double max =
+                    plugin.getConfig().getDouble(
+                            "pricing.maximum-price",
+                            100000000
+                    );
+
+            player.sendMessage(
+                    color(
+                            "&cPrice must be between &e"
+                                    + PriceFormatter.format(min)
+                                    + " &cand &e"
+                                    + PriceFormatter.format(max)
+                    )
+            );
+            return;
+        }
+
+        if (!manager.canList(player)) {
+            player.sendMessage(
+                    color("&cYou reached your auction limit.")
+            );
+            return;
+        }
+
+        ItemStack hand =
+                player.getInventory().getItemInMainHand();
+
+        if (hand.getType().isAir()) {
+            player.sendMessage(
+                    color("&cThe item is no longer in your hand.")
+            );
+            return;
+        }
+
+        if (isBlocked(hand)) {
+            player.sendMessage(
+                    color("&cThis item cannot be auctioned.")
+            );
+            return;
+        }
+
+        ItemStack listingItem = hand.clone();
+
+        player.getInventory().setItemInMainHand(
+                new ItemStack(Material.AIR)
+        );
+
+        boolean created =
+                manager.addListing(
+                        player,
+                        listingItem,
+                        price
+                );
+
+        if (!created) {
+            player.getInventory().addItem(
+                    listingItem
+            );
+
+            player.sendMessage(
+                    color("&cCould not create the auction.")
+            );
+            return;
+        }
+
+        player.sendMessage(
+                color(
+                        "&aAuction created for &e"
+                                + PriceFormatter.format(price)
+                                + "&a."
+                )
+        );
+
+        openBrowse(player, 0);
+    }
+
+    private AuctionListing getListingForSlot(
+            Player player,
+            int slot
+    ) {
+        List<AuctionListing> listings =
+                new ArrayList<>(
+                        manager.getActiveListings()
+                );
 
         listings.sort(
-                Comparator.comparingLong(AuctionListing::getCreatedAt)
-                        .reversed()
+                Comparator.comparingLong(
+                        AuctionListing::getCreatedAt
+                ).reversed()
         );
 
-        int perPage = Math.max(
-                1,
-                plugin.getConfig().getInt("settings.items-per-page", 45)
-        );
+        GuiHolder holder = getHolder(player);
 
-        int page = getCurrentPage(player);
-        int index = page * perPage + slot;
+        int page =
+                holder == null
+                        ? 0
+                        : holder.getPage();
 
-        if (index < 0 || index >= listings.size()) {
+        int index =
+                (page * 45) + slot;
+
+        if (index < 0
+                || index >= listings.size()) {
             return null;
         }
 
         return listings.get(index);
     }
 
-    private int getCurrentPage(Player player) {
-        if (!(player.getOpenInventory().getTopInventory().getHolder()
-                instanceof GuiHolder holder)) {
-            return 0;
+    private GuiHolder getHolder(Player player) {
+        if (player.getOpenInventory()
+                .getTopInventory()
+                .getHolder() instanceof GuiHolder holder) {
+            return holder;
         }
 
-        return holder.getPage();
+        return null;
     }
 
-    private ItemStack createListingItem(AuctionListing listing) {
-        ItemStack item = listing.getItem().clone();
+    private boolean isBlocked(ItemStack item) {
+        List<String> blocked =
+                plugin.getConfig().getStringList(
+                        "restrictions.blocked-materials"
+                );
 
-        ItemMeta meta = item.getItemMeta();
+        return blocked.contains(
+                item.getType().name()
+        );
+    }
+
+    private MapGiveResult giveItem(
+            Player player,
+            ItemStack item
+    ) {
+        Map<Integer, ItemStack> leftover =
+                player.getInventory().addItem(
+                        item.clone()
+                );
+
+        if (leftover.isEmpty()) {
+            return new MapGiveResult(true);
+        }
+
+        for (ItemStack stack : leftover.values()) {
+            player.getWorld().dropItemNaturally(
+                    player.getLocation(),
+                    stack
+            );
+        }
+
+        return new MapGiveResult(true);
+    }
+
+    private void fillBottom(Inventory inv) {
+        ItemStack filler =
+                button(
+                        Material.GRAY_STAINED_GLASS_PANE,
+                        " "
+                );
+
+        for (int i = 45; i < 54; i++) {
+            inv.setItem(i, filler);
+        }
+    }
+
+    private void fillFull(Inventory inv) {
+        ItemStack filler =
+                button(
+                        Material.GRAY_STAINED_GLASS_PANE,
+                        " "
+                );
+
+        for (int i = 0; i < inv.getSize(); i++) {
+            inv.setItem(i, filler);
+        }
+    }
+
+    private ItemStack createListingItem(
+            AuctionListing listing
+    ) {
+        ItemStack item =
+                listing.getItem().clone();
+
+        ItemMeta meta =
+                item.getItemMeta();
 
         if (meta == null) {
             return item;
         }
 
-        List<String> lore = meta.hasLore()
-                ? new ArrayList<>(meta.getLore())
-                : new ArrayList<>();
+        List<String> lore =
+                meta.hasLore()
+                        ? new ArrayList<>(meta.getLore())
+                        : new ArrayList<>();
 
         lore.add("");
-        lore.add(color("&7Seller: &f" + listing.getSellerName()));
-        lore.add(color("&7Price: &e" + PriceFormatter.format(
-                listing.getPrice()
-        )));
-        lore.add(color("&7Amount: &f" + listing.getItem().getAmount()));
-        lore.add(color("&7Time Left: &f" + listing.getRemainingFormatted()));
-
+        lore.add(
+                color(
+                        "&7Seller: &f"
+                                + listing.getSellerName()
+                )
+        );
+        lore.add(
+                color(
+                        "&7Amount: &f"
+                                + listing.getItem().getAmount()
+                )
+        );
+        lore.add(
+                color(
+                        "&7Price: &e"
+                                + PriceFormatter.format(
+                                listing.getPrice()
+                        )
+                )
+        );
+        lore.add(
+                color(
+                        "&7Time Left: &f"
+                                + listing.getRemainingFormatted()
+                )
+        );
         lore.add("");
-        lore.add(color("&aClick to purchase"));
-
-        meta.setLore(lore);
-
-        meta.addItemFlags(
-                ItemFlag.HIDE_ATTRIBUTES,
-                ItemFlag.HIDE_ENCHANTS
+        lore.add(
+                color("&aClick to purchase")
         );
 
+        meta.setLore(lore);
         item.setItemMeta(meta);
 
         return item;
-    }
-
-    private void fillBackground(Inventory inventory) {
-        ItemStack filler = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
-
-        ItemMeta meta = filler.getItemMeta();
-
-        if (meta != null) {
-            meta.setDisplayName(" ");
-            filler.setItemMeta(meta);
-        }
-
-        for (int i = 45; i < 54; i++) {
-            inventory.setItem(i, filler);
-        }
     }
 
     private ItemStack button(
@@ -424,14 +794,19 @@ public final class AHGui {
             String name,
             String... lore
     ) {
-        ItemStack item = new ItemStack(material);
+        ItemStack item =
+                new ItemStack(material);
 
-        ItemMeta meta = item.getItemMeta();
+        ItemMeta meta =
+                item.getItemMeta();
 
         if (meta != null) {
-            meta.setDisplayName(color(name));
+            meta.setDisplayName(
+                    color(name)
+            );
 
-            List<String> lines = new ArrayList<>();
+            List<String> lines =
+                    new ArrayList<>();
 
             for (String line : lore) {
                 lines.add(color(line));
@@ -444,28 +819,31 @@ public final class AHGui {
         return item;
     }
 
-    private String prettyMaterial(Material material) {
-        String raw = material.name().toLowerCase().replace('_', ' ');
+    private String pretty(Material material) {
+        String[] parts =
+                material.name()
+                        .toLowerCase()
+                        .replace('_', ' ')
+                        .split(" ");
 
-        String[] parts = raw.split(" ");
-
-        StringBuilder result = new StringBuilder();
+        StringBuilder result =
+                new StringBuilder();
 
         for (String part : parts) {
-            if (part.isEmpty()) {
-                continue;
-            }
-
             if (!result.isEmpty()) {
                 result.append(' ');
             }
 
             result.append(
-                    Character.toUpperCase(part.charAt(0))
+                    Character.toUpperCase(
+                            part.charAt(0)
+                    )
             );
 
             if (part.length() > 1) {
-                result.append(part.substring(1));
+                result.append(
+                        part.substring(1)
+                );
             }
         }
 
@@ -473,6 +851,12 @@ public final class AHGui {
     }
 
     private String color(String text) {
-        return ChatColor.translateAlternateColorCodes('&', text);
+        return ChatColor.translateAlternateColorCodes(
+                '&',
+                text == null ? "" : text
+        );
     }
-                           }
+
+    private record MapGiveResult(boolean success) {
+    }
+            }
